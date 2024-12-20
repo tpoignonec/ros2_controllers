@@ -104,6 +104,22 @@ InterfaceConfiguration DiffDriveController::state_interface_configuration() cons
   return {interface_configuration_type::INDIVIDUAL, conf_names};
 }
 
+std::vector<hardware_interface::CommandInterface>
+DiffDriveController::on_export_reference_interfaces()
+{
+  const int nr_ref_itfs = 2;
+  reference_interfaces_.resize(nr_ref_itfs, std::numeric_limits<double>::quiet_NaN());
+  std::vector<hardware_interface::CommandInterface> reference_interfaces;
+  reference_interfaces.reserve(nr_ref_itfs);
+  reference_interfaces.push_back(hardware_interface::CommandInterface(
+    get_node()->get_name(), std::string("linear/") + hardware_interface::HW_IF_VELOCITY,
+    &reference_interfaces_[0]));
+  reference_interfaces.push_back(hardware_interface::CommandInterface(
+    get_node()->get_name(), std::string("angular/") + hardware_interface::HW_IF_VELOCITY,
+    &reference_interfaces_[1]));
+  return reference_interfaces;
+}
+
 controller_interface::return_type DiffDriveController::update(
   const rclcpp::Time & time, const rclcpp::Duration & period)
 {
