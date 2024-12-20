@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 
-#include "controller_interface/controller_interface.hpp"
+#include "controller_interface/chainable_controller_interface.hpp"
 #include "diff_drive_controller/odometry.hpp"
 #include "diff_drive_controller/speed_limiter.hpp"
 #include "diff_drive_controller/visibility_control.h"
@@ -42,7 +42,7 @@
 
 namespace diff_drive_controller
 {
-class DiffDriveController : public controller_interface::ControllerInterface
+class DiffDriveController : public controller_interface::ChainableControllerInterface
 {
   using TwistStamped = geometry_msgs::msg::TwistStamped;
 
@@ -57,7 +57,7 @@ public:
   controller_interface::InterfaceConfiguration state_interface_configuration() const override;
 
   DIFF_DRIVE_CONTROLLER_PUBLIC
-  controller_interface::return_type update(
+  controller_interface::return_type update_and_write_commands(
     const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
   DIFF_DRIVE_CONTROLLER_PUBLIC
@@ -86,6 +86,15 @@ public:
   DIFF_DRIVE_CONTROLLER_PUBLIC
   controller_interface::CallbackReturn on_shutdown(
     const rclcpp_lifecycle::State & previous_state) override;
+
+  DIFF_DRIVE_CONTROLLER_PUBLIC
+  bool on_set_chained_mode(bool chained_mode) override;
+
+protected:
+  std::vector<hardware_interface::CommandInterface> on_export_reference_interfaces() override;
+
+  controller_interface::return_type update_reference_from_subscribers(
+    const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
 protected:
   struct WheelHandle
@@ -154,6 +163,10 @@ protected:
 
   bool reset();
   void halt();
+
+private:
+  // callback for topic interface
+  void reference_callback(const std::shared_ptr<TwistStamped> msg);
 };
 }  // namespace diff_drive_controller
 #endif  // DIFF_DRIVE_CONTROLLER__DIFF_DRIVE_CONTROLLER_HPP_
