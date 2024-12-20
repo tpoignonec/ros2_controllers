@@ -36,6 +36,25 @@ constexpr auto DEFAULT_ODOMETRY_TOPIC = "~/odom";
 constexpr auto DEFAULT_TRANSFORM_TOPIC = "/tf";
 }  // namespace
 
+namespace
+{  // utility
+
+// called from RT control loop
+void reset_controller_reference_msg(
+  const std::shared_ptr<TwistStamped> & msg,
+  const std::shared_ptr<rclcpp_lifecycle::LifecycleNode> & node)
+{
+  msg->header.stamp = node->now();
+  msg->twist.linear.x = std::numeric_limits<double>::quiet_NaN();
+  msg->twist.linear.y = std::numeric_limits<double>::quiet_NaN();
+  msg->twist.linear.z = std::numeric_limits<double>::quiet_NaN();
+  msg->twist.angular.x = std::numeric_limits<double>::quiet_NaN();
+  msg->twist.angular.y = std::numeric_limits<double>::quiet_NaN();
+  msg->twist.angular.z = std::numeric_limits<double>::quiet_NaN();
+}
+
+}  // namespace
+
 namespace diff_drive_controller
 {
 using namespace std::chrono_literals;
@@ -46,7 +65,7 @@ using hardware_interface::HW_IF_VELOCITY;
 using lifecycle_msgs::msg::State;
 
 DiffDriveController::DiffDriveController()
-: controller_interface::ControllerInterface(),
+: controller_interface::ChainableControllerInterface(),
   // dummy limiter, will be created in on_configure
   // could be done with shared_ptr instead -> but will break ABI
   limiter_angular_(std::numeric_limits<double>::quiet_NaN()),
@@ -670,4 +689,4 @@ controller_interface::CallbackReturn DiffDriveController::configure_side(
 #include "class_loader/register_macro.hpp"
 
 CLASS_LOADER_REGISTER_CLASS(
-  diff_drive_controller::DiffDriveController, controller_interface::ControllerInterface)
+  diff_drive_controller::DiffDriveController, controller_interface::ChainableControllerInterface)
